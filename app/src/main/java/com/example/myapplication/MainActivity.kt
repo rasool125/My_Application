@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -52,10 +55,12 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.myapplication.sticker.StickerModel
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
@@ -133,106 +138,61 @@ class MainActivity : ComponentActivity() {
 //                        }
 
                         val dummyItems = List(20) { "Item ${it + 1}" }
-                        StickerGridWithPopup(stickerList = dummyItems)
+                        PopOutItemInLazyGrid()
                     }
                 }
             }
         }
     }
 }
+
 
 
 
 
 @Composable
-fun StickerGridWithPopup(
-    stickerList: List<String>
-) {
-    val density = LocalDensity.current
+fun PopOutItemInLazyGrid() {
+    val items = List(20) { "Item $it" }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
-    var popupSticker by remember { mutableStateOf<String?>(null) }
-    var itemBounds by remember { mutableStateOf<Rect?>(null) }
-    var showPopup by remember { mutableStateOf(false) }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        itemsIndexed(items) { index, item ->
+            val isSelected = selectedIndex == index
 
-    val scaleAnim = remember { Animatable(1f) }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(stickerList) { sticker ->
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(Color.Gray, shape = CircleShape)
-                        .onGloballyPositioned { coords ->
-                            if (popupSticker == sticker) {
-                                val position = coords.positionInRoot()
-                                val size = coords.size
-                                itemBounds = Rect(
-                                    offset = position,
-                                    size = Size(size.width.toFloat(), size.height.toFloat())
-                                )
-                            }
-                        }
-                        .clickable {
-                            popupSticker = sticker
-                            showPopup = true
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = sticker, color = Color.White)
-                }
-            }
-        }
-
-        // OVERLAY: Popup that exactly matches original item
-        if (showPopup && popupSticker != null && itemBounds != null) {
-            val bounds = itemBounds!!
-            val widthDp = with(density) { bounds.width.toDp() }
-            val heightDp = with(density) { bounds.height.toDp() }
-            val offsetXDp = with(density) { bounds.left.toDp() }
-            val offsetYDp = with(density) { bounds.top.toDp() }
-
-            LaunchedEffect(popupSticker) {
-                scaleAnim.snapTo(1f)
-                scaleAnim.animateTo(
-                    targetValue = 2f,
-                    animationSpec = tween(250, easing = FastOutSlowInEasing)
-                )
-            }
+            // Animate scale
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.2f else 1f,
+                animationSpec = tween(durationMillis = 200),
+                label = "scale"
+            )
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                            showPopup = false
-                        }
+                    .padding(8.dp)
+                    .aspectRatio(1f)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin.Center
                     }
+                    .zIndex(if (isSelected) 1f else 0f) // Ensure selected item is drawn on top
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) Color.Yellow else Color.LightGray)
+                    .clickable {
+                        selectedIndex = if (isSelected) null else index
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .absoluteOffset(x = offsetXDp, y = offsetYDp)
-                        .size(widthDp, heightDp)
-                        .graphicsLayer {
-                            scaleX = scaleAnim.value
-                            scaleY = scaleAnim.value
-                            transformOrigin = TransformOrigin.Center // Very important!
-                        }
-                        .background(Color.Black, shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = popupSticker!!, color = Color.White, fontSize = 24.sp)
-                }
+                Text(item)
             }
         }
     }
 }
+
 
 
 
