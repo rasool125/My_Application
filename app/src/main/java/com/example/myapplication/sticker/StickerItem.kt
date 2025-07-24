@@ -6,17 +6,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculateCentroid
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateRotation
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -36,10 +28,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -48,7 +38,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
-import kotlinx.coroutines.delay
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -83,12 +72,24 @@ fun StickerItem(
     var downPosition by remember { mutableStateOf(Offset.Zero) }
 
     LaunchedEffect(position, scale, rotation, isFlipped) {
-        onUpdate(sticker.copy(position = position, scale = scale, rotation = rotation, isFlipped = isFlipped))
+        onUpdate(
+            sticker.copy(
+                position = position,
+                scale = scale,
+                rotation = rotation,
+                isFlipped = isFlipped
+            )
+        )
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+
         Box(
             modifier = Modifier
+                .background(Color.Red)
                 .offset { IntOffset(position.x.roundToInt(), position.y.roundToInt()) }
                 .graphicsLayer {
                     scaleX = if (isFlipped) -scale else scale
@@ -112,7 +113,8 @@ fun StickerItem(
                                 val dy = event.getY(1) - event.getY(0)
 
                                 initialDistance = sqrt(dx * dx + dy * dy).coerceAtLeast(1f)
-                                initialAngle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                initialAngle =
+                                    Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
 
                                 val midX = (event.getX(0) + event.getX(1)) / 2f
                                 val midY = (event.getY(0) + event.getY(1)) / 2f
@@ -140,7 +142,8 @@ fun StickerItem(
                                 val dx = x1 - x0
                                 val dy = y1 - y0
                                 val currentDistance = sqrt(dx * dx + dy * dy).coerceAtLeast(1f)
-                                val currentAngle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                val currentAngle =
+                                    Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
 
                                 // Calculate relative change from initial
                                 val scaleFactor = currentDistance / initialDistance
@@ -178,16 +181,15 @@ fun StickerItem(
                             initialDistance = 1f
                             initialAngle = 0f
                         }
+
                     }
+
                     true
                 }
 
-
-
-
-
         ) {
-            val borderModifier = if (isSelected) Modifier.border(1.dp, Color.Black.copy(alpha = 0.2f)) else Modifier
+            val borderModifier =
+                if (isSelected) Modifier.border(1.dp, Color.Black.copy(alpha = 0.2f)) else Modifier
 
             when (val content = sticker.content) {
                 is StickerContent.BitmapSticker -> {
@@ -222,6 +224,8 @@ fun StickerItem(
                 }
             }
         }
+
+
 
         if (isSelected) {
             val center = Offset(
@@ -300,13 +304,9 @@ fun StickerItem(
                 )
             }
         }
+
     }
 }
-
-
-
-
-
 
 
 /*
